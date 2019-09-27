@@ -37,9 +37,10 @@ func (gorbm *GoRbm) SetWorkerID(workerID string) {
 }
 
 // PushMessage push message in redis
-func (gorbm *GoRbm) PushMessage(objet string, message string) error {
-	return gorbm.rClient.RPush(objet, message).Err()
+func (gorbm *GoRbm) PushMessage(message string) {
+
 	// TODO : mettre une vérification que le GUID n'est pas déjà fait l'ojet d'une demande
+	gorbm.err = gorbm.rClient.RPush(gorbm.workerID, message).Err()
 
 }
 
