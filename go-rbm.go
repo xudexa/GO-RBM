@@ -7,6 +7,11 @@ import (
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
+// NewRBM return
+func NewRBM(w string) *GoRbm {
+	return &GoRbm{workerID: w}
+}
+
 // GoRbm stores the operating information
 type GoRbm struct {
 	rOption  redis.Options
@@ -29,20 +34,6 @@ func (gorbm *GoRbm) GetWorkerID() string {
 // SetWorkerID Change the ccurrent WorkerID
 func (gorbm *GoRbm) SetWorkerID(workerID string) {
 	gorbm.workerID = workerID
-}
-
-// New init package with load configuration and establish connect to REDIS
-func (gorbm *GoRbm) New(workerID string) *GoRbm {
-
-	gorbm.workerID = workerID
-
-	gorbm.loadOption()
-	if gorbm.err == nil {
-		gorbm.connect()
-	}
-
-	return gorbm
-
 }
 
 // PushMessage push message in redis
@@ -74,17 +65,22 @@ func (gorbm *GoRbm) GetStatus(GUID string) string {
 
 }
 
-func (gorbm *GoRbm) connect() {
+// Connect Establish connection
+func (gorbm *GoRbm) Connect() {
 
-	client := redis.NewClient(&redis.Options{
-		Addr:     gorbm.rOption.Addr,
-		Password: gorbm.rOption.Password, // no password set
-		DB:       gorbm.rOption.DB,       // use default DB
-	})
-
-	_, gorbm.err = client.Ping().Result()
+	gorbm.loadOption()
 	if gorbm.err == nil {
-		gorbm.rClient = client
+
+		client := redis.NewClient(&redis.Options{
+			Addr:     gorbm.rOption.Addr,
+			Password: gorbm.rOption.Password, // no password set
+			DB:       gorbm.rOption.DB,       // use default DB
+		})
+
+		_, gorbm.err = client.Ping().Result()
+		if gorbm.err == nil {
+			gorbm.rClient = client
+		}
 	}
 
 }
