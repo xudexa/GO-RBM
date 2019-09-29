@@ -1,6 +1,9 @@
 package gorbm
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/go-redis/redis"
 	jsoniter "github.com/json-iterator/go"
 )
@@ -9,31 +12,16 @@ var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 // NewRBM return
 func NewRBM(w string) *GoRbm {
-	return &GoRbm{workerID: w}
+	return &GoRbm{eventQueueName: w}
 }
 
 // GoRbm stores the operating information
 type GoRbm struct {
-	rOption  redis.Options
-	rClient  *redis.Client
-	optLoad  bool
-	err      error
-	workerID string
-}
-
-// GetError returns an error resulted from Go-RBM.
-func (gorbm *GoRbm) GetError() error {
-	return gorbm.err
-}
-
-// GetWorkerID returns WorkerID.
-func (gorbm *GoRbm) GetWorkerID() string {
-	return gorbm.workerID
-}
-
-// SetWorkerID Change the ccurrent WorkerID
-func (gorbm *GoRbm) SetWorkerID(workerID string) {
-	gorbm.workerID = workerID
+	rOption        redis.Options
+	rClient        *redis.Client
+	err            error
+	workerID       string
+	eventQueueName string
 }
 
 // PushMessage push message in redis
@@ -44,25 +32,63 @@ func (gorbm *GoRbm) PushMessage(message string) {
 
 }
 
-// Listen the liste on workerID and call the callback function
-func (gorbm *GoRbm) Listen(callBack func(message string)) {
+// Listen eventQueueName,  and call the callback function
+func (gorbm *GoRbm) Listen(workerID string, callBack func(message string)) {
+
+	var processingQueue string
+	processingQueue = gorbm.eventQueueName + "-processing-" + workerID
+	gorbm.switchToProcessingQueue(processingQueue)
+
+}
+
+func (gorbm *GoRbm) switchToProcessingQueue(processingQueue string) {
+	retour := gorbm.rClient.RPopLPush(gorbm.eventQueueName, processingQueue)
+	fmt.Println(retour)
 
 }
 
 // GetStatus retrieve the message once the processing is complete
-func (gorbm *GoRbm) GetStatus(GUID string) string {
+func (gorbm *GoRbm) GetStatus(GUID string) (string, error) {
 
-	var messages []string
+	var responses []string
+	var status string
+	var err error
 
-	messages, gorbm.err = gorbm.rClient.Keys("*" + GUID).Result()
-
+	responses, gorbm.err = gorbm.rClient.Keys("Done" + GUID).Result()
 	if gorbm.err == nil {
-		// TODO : faire un substring de la chaine pour vérifier dans quel état est le traitment
 
-		return messages[0]
+		l := len(responses)
+		switch {
+		case l == 1:
+			// * Travail terminé, récupération du résultat
+			status = strings.Split(responses[0], ":")[0]
+
+		case l == 0:
+			responses, gorbm.err = gorbm.rClient.Keys("InProgress" + GUID).Result()
+			if gorbm.err == nil {
+				l := len(responses)
+				switch {
+				case l == 1:
+					// * Travail dans InProgress
+					status = "InProgress"
+				case l == 0:
+					// ? Travail toujours en cours, y a t'il un problème
+					status = "nothing"
+				case l > 1:
+					status = "Error"
+					err = fmt.Errorf("Doublons dans le InProgress")
+				}
+
+			}
+
+		case l > 1:
+			status = "Error"
+			err = fmt.Errorf("Doublons dans le Done")
+
+		}
 	}
 
-	return ""
+	return status, err
 
 }
 
@@ -96,3 +122,20 @@ func (gorbm *GoRbm) loadOption() {
 func (gorbm *GoRbm) Disconnect() {
 	gorbm.rClient.Close()
 }
+
+// GetError returns an error resulted from Go-RBM.
+func (gorbm *GoRbm) GetError() error {
+	return gorbm.err
+}
+
+/*
+// GetWorkerID returns WorkerID.
+func (gorbm *GoRbm) GetWorkerID() string {
+	return gorbm.workerID
+}
+
+// SetWorkerID Change the ccurrent WorkerID
+func (gorbm *GoRbm) SetWorkerID(workerID string) {
+	gorbm.workerID = workerID
+}
+*/
