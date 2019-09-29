@@ -28,7 +28,7 @@ type GoRbm struct {
 func (gorbm *GoRbm) PushMessage(message string) {
 
 	// TODO : mettre une vérification que le GUID n'est pas déjà fait l'ojet d'une demande
-	gorbm.err = gorbm.rClient.RPush(gorbm.workerID, message).Err()
+	gorbm.err = gorbm.rClient.LPush(gorbm.eventQueueName, message).Err()
 
 }
 
