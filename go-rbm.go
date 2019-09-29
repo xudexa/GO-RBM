@@ -42,18 +42,9 @@ func (gorbm *GoRbm) Listen(workerID string, callBack func(message string)) {
 }
 
 func (gorbm *GoRbm) switchToProcessingQueue(processingQueue string) {
-	retour, err := gorbm.rClient.RPopLPush(gorbm.eventQueueName, processingQueue).Result()
-	if err == nil {
-		if retour != "redis: nil" {
-			fmt.Println(retour)
-		} else {
-			fmt.Println("Plus rien a traiter.")
-		}
+	retour := gorbm.rClient.RPopLPush(gorbm.eventQueueName, processingQueue).Val()
 
-	} else {
-		fmt.Println(err)
-		fmt.Println(retour)
-	}
+	fmt.Println(retour)
 
 }
 
