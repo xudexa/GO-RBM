@@ -38,6 +38,7 @@ func (gorbm *GoRbm) Listen(workerID string, callBack func(message string)) {
 	var processingQueue string
 	processingQueue = gorbm.eventQueueName + "-processing-" + workerID
 	gorbm.switchToProcessingQueue(processingQueue)
+	gorbm.threatProcessingQueue(processingQueue, callBack)
 
 }
 
@@ -48,6 +49,17 @@ func (gorbm *GoRbm) switchToProcessingQueue(processingQueue string) {
 		retour = gorbm.rClient.RPopLPush(gorbm.eventQueueName, processingQueue).Val()
 	}
 
+}
+
+func (gorbm *GoRbm) threatProcessingQueue(processingQueue string, callback func(message string)) {
+	var retour string
+
+	for ok := true; ok; ok = (retour != "") {
+		retour = gorbm.rClient.RPop(processingQueue).Val()
+		if retour != "" {
+			callback(retour)
+		}
+	}
 }
 
 // GetStatus retrieve the message once the processing is complete
