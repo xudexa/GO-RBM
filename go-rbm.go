@@ -43,8 +43,11 @@ func (gorbm *GoRbm) Listen(workerID string, callBack func(message string)) {
 
 func (gorbm *GoRbm) switchToProcessingQueue(processingQueue string) {
 	retour := gorbm.rClient.RPopLPush(gorbm.eventQueueName, processingQueue).Val()
-
-	fmt.Println(retour)
+	if retour != "" {
+		fmt.Println(retour)
+	} else {
+		fmt.Println("Rien")
+	}
 
 }
 
