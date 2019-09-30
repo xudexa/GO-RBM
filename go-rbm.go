@@ -16,8 +16,8 @@ var oneWeekExpire = 60 * 60 * 24 * 7
 // StrRequest structure of request send to Queue
 type StrRequest struct {
 	GUID      uuid.UUID
-	timeStamp time.Time
-	content   interface{}
+	TimeStamp time.Time
+	Content   interface{}
 }
 
 // GoRbm stores the operating information
@@ -42,11 +42,9 @@ func (gorbm *GoRbm) PushMessage(content interface{}) uuid.UUID {
 
 	message.GUID, gorbm.err = uuid.NewV4()
 	if gorbm.err == nil {
-		message.timeStamp = time.Now()
-		message.content = content
-		fmt.Println(message)
+		message.TimeStamp = time.Now()
+		message.Content = content
 		ret, gorbm.err = jsoniter.Marshal(message)
-		fmt.Println(string(ret))
 		if gorbm.err == nil {
 			gorbm.err = gorbm.rClient.LPush(gorbm.eventQueueName, string(ret)).Err()
 		}
