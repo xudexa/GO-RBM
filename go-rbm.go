@@ -44,8 +44,9 @@ func (gorbm *GoRbm) PushMessage(content interface{}) uuid.UUID {
 	if gorbm.err == nil {
 		message.timeStamp = time.Now()
 		message.content = content
+		fmt.Println(message)
 		ret, gorbm.err = jsoniter.Marshal(message)
-		fmt.Println(ret)
+		fmt.Println(string(ret))
 		if gorbm.err == nil {
 			gorbm.err = gorbm.rClient.LPush(gorbm.eventQueueName, string(ret)).Err()
 		}
