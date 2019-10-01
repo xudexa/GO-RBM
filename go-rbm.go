@@ -86,11 +86,13 @@ func (gorbm *GoRbm) threatProcessingQueue(processingQueue string, callback func(
 				gorbm.err = gorbm.rClient.Set("InProgress:"+guid, retour, 0).Err()
 				if gorbm.err == nil {
 					resultatCallBack = callback(message.Content)
+					fmt.Println(resultatCallBack)
 					gorbm.err = gorbm.rClient.Del("InProgress:" + guid).Err()
 					if gorbm.err == nil {
-						// TODO : Récupérer le message au retour du traitment
+						fmt.Println("Del OK")
 						gorbm.err = gorbm.rClient.Set("Done:"+guid, resultatCallBack, 0).Err()
 						if gorbm.err == nil {
+							fmt.Println("Done:"+guid, resultatCallBack)
 							t := time.Now()
 							t.AddDate(0, 0, 7)
 							gorbm.rClient.ExpireAt("Done:"+guid, t)
