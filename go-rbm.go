@@ -15,9 +15,10 @@ var oneWeekExpire = 60 * 60 * 24 * 7
 
 // StrRequest structure of request send to Queue
 type StrRequest struct {
-	GUID      uuid.UUID
-	TimeStamp time.Time
-	Content   interface{}
+	GUID        uuid.UUID
+	TimeStamp   time.Time
+	TokenString string
+	Content     interface{}
 }
 
 // GoRbm stores the operating information
@@ -35,7 +36,7 @@ func NewRBM(w string) *GoRbm {
 }
 
 // PushMessage push message in redis
-func (gorbm *GoRbm) PushMessage(content interface{}) uuid.UUID {
+func (gorbm *GoRbm) PushMessage(tokenString string, content interface{}) uuid.UUID {
 
 	var message StrRequest
 	var ret []byte
@@ -44,6 +45,7 @@ func (gorbm *GoRbm) PushMessage(content interface{}) uuid.UUID {
 	if gorbm.err == nil {
 		message.TimeStamp = time.Now()
 		message.Content = content
+		message.TokenString = tokenString
 		ret, gorbm.err = jsoniter.Marshal(message)
 		if gorbm.err == nil {
 			gorbm.err = gorbm.rClient.LPush(gorbm.eventQueueName, string(ret)).Err()
