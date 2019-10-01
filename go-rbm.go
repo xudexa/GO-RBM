@@ -105,7 +105,7 @@ func (gorbm *GoRbm) GetStatus(GUID string) (string, error) {
 	var responses []string
 	var status string
 	var err error
-	responses, gorbm.err = gorbm.rClient.Keys("Done" + GUID).Result()
+	responses, gorbm.err = gorbm.rClient.Keys("Done:" + GUID).Result()
 	if gorbm.err == nil {
 		l := len(responses)
 		switch {
@@ -113,7 +113,7 @@ func (gorbm *GoRbm) GetStatus(GUID string) (string, error) {
 			// * Travail terminé, récupération du résultat
 			status = strings.Split(responses[0], ":")[0]
 		case l == 0:
-			responses, gorbm.err = gorbm.rClient.Keys("InProgress" + GUID).Result()
+			responses, gorbm.err = gorbm.rClient.Keys("InProgress:" + GUID).Result()
 			if gorbm.err == nil {
 				l := len(responses)
 				switch {
