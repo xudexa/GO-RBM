@@ -55,7 +55,7 @@ func (gorbm *GoRbm) PushMessage(tokenString string, content interface{}) uuid.UU
 }
 
 // Listen eventQueueName,  and call the callback function
-func (gorbm *GoRbm) Listen(workerID string, callBack func(message string)) {
+func (gorbm *GoRbm) Listen(workerID string, callBack func(message interface{}) interface{}) {
 	var processingQueue string
 	processingQueue = gorbm.eventQueueName + "-processing-" + workerID
 	gorbm.switchToProcessingQueue(processingQueue)
@@ -69,24 +69,32 @@ func (gorbm *GoRbm) switchToProcessingQueue(processingQueue string) {
 	}
 }
 
-func (gorbm *GoRbm) threatProcessingQueue(processingQueue string, callback func(message string)) {
+func (gorbm *GoRbm) threatProcessingQueue(processingQueue string, callback func(message interface{}) interface{}) {
 	var retour string
+	var message StrRequest
+	var resultatCallBack interface{}
+	var guid string
+
 	for ok := true; ok; ok = (retour != "") {
+
 		retour = gorbm.rClient.RPop(processingQueue).Val()
 		if retour != "" {
-			// TODO : Récupération du GUID de traitement
-			// ? Interrogation personnel : Dois je mettre cela ici ou faire cela dans la callback
-			gorbm.err = gorbm.rClient.Set("InProgress:"+"GUID", retour, 0).Err()
+			byt := []byte(retour)
+			gorbm.err = jsoniter.Unmarshal(byt, &message)
 			if gorbm.err == nil {
-				callback(retour)
-				gorbm.err = gorbm.rClient.Del("InProgress:" + "GUID").Err()
+				guid = message.GUID.String()
+				gorbm.err = gorbm.rClient.Set("InProgress:"+guid, retour, 0).Err()
 				if gorbm.err == nil {
-					// TODO : Récupérer le message au retour du traitment
-					gorbm.err = gorbm.rClient.Set("Done:"+"GUID", retour, 0).Err()
+					resultatCallBack = callback(message.Content)
+					gorbm.err = gorbm.rClient.Del("InProgress:" + guid).Err()
 					if gorbm.err == nil {
-						t := time.Now()
-						t.AddDate(0, 0, 7)
-						gorbm.rClient.ExpireAt("Done:"+"GUID", t)
+						// TODO : Récupérer le message au retour du traitment
+						gorbm.err = gorbm.rClient.Set("Done:"+guid, resultatCallBack, 0).Err()
+						if gorbm.err == nil {
+							t := time.Now()
+							t.AddDate(0, 0, 7)
+							gorbm.rClient.ExpireAt("Done:"+guid, t)
+						}
 					}
 				}
 			}
