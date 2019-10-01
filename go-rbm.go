@@ -11,7 +11,6 @@ import (
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
-var oneWeekExpire = 60 * 60 * 24 * 7
 
 // StrRequest structure of request send to Queue
 type StrRequest struct {
@@ -101,7 +100,7 @@ func (gorbm *GoRbm) threatProcessingQueue(processingQueue string, callback func(
 }
 
 // GetStatus retrieve the message once the processing is complete
-func (gorbm *GoRbm) GetStatus(GUID string) (string, error) {
+func (gorbm *GoRbm) GetStatus(GUID string) (interface{}, error) {
 	var responses []string
 	var status string
 	var err error
@@ -122,7 +121,7 @@ func (gorbm *GoRbm) GetStatus(GUID string) (string, error) {
 					status = "InProgress"
 				case l == 0:
 					// ? Travail toujours en cours, y a t'il un problème
-					status = "nothing"
+					status = "Nothing"
 				case l > 1:
 					status = "Error"
 					err = fmt.Errorf("Duplicate in InProgress")
@@ -155,7 +154,7 @@ func (gorbm *GoRbm) Connect() {
 func (gorbm *GoRbm) loadOption() {
 	gorbm.rOption.Addr = "127.0.0.1:6379"
 	gorbm.rOption.Password = ""
-	gorbm.rOption.DB = 3
+	gorbm.rOption.DB = 2
 }
 
 // Disconnect close redis connection
